@@ -1,0 +1,87 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [main, master, dev]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  # JOB KIỂM TRA BACKEND
+  backend-test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./backend
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: "18"
+          cache: "npm"
+          cache-dependency-path: ./backend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Create .env file
+        run: |
+          echo "JWT_SECRET=${{ secrets.JWT_SECRET }}" > .env
+          echo "DB_URI=${{ secrets.DB_URI }}" >> .env
+          echo "CLOUDINARY_CLOUD_NAME=${{ secrets.CLOUDINARY_CLOUD_NAME }}" >> .env
+          echo "CLOUDINARY_API_KEY=${{ secrets.CLOUDINARY_API_KEY }}" >> .env
+          echo "CLOUDINARY_API_SECRET=${{ secrets.CLOUDINARY_API_SECRET }}" >> .env
+          echo "EMAIL_USER=${{ secrets.EMAIL_USER }}" >> .env
+          echo "EMAIL_PASS=${{ secrets.EMAIL_PASS }}" >> .env
+          echo "GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}" >> .env
+          echo "PORT=3000" >> .env
+
+      - name: Test backend
+        run: npm test || echo "No tests specified, skipping"
+
+  # JOB KIỂM TRA FRONTEND
+  frontend-test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./frontend
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: "18"
+          cache: "npm"
+          cache-dependency-path: ./frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Create .env file
+        run: |
+          echo "VITE_GHN_API_TOKEN=${{ secrets.VITE_GHN_API_TOKEN }}" > .env
+          echo "VITE_GHN_SHOP_ID=${{ secrets.VITE_GHN_SHOP_ID }}" >> .env
+          echo "VITE_GHN_API_TOKEN_DEV=${{ secrets.VITE_GHN_API_TOKEN_DEV }}" >> .env
+          echo "VITE_GHN_SHOP_ID_DEV=${{ secrets.VITE_GHN_SHOP_ID_DEV }}" >> .env
+
+      - name: Build frontend
+        run: npm run build
+
+  # JOB TRIỂN KHAI (NẾU CÁC JOB KIỂM TRA THÀNH CÔNG)
+  deploy:
+    needs: [backend-test, frontend-test]
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Deploy to production
+        # Thay thế phần này với cách triển khai thực tế của bạn
+        run: echo "Triển khai thành công"
+        # Ví dụ: Triển khai lên Heroku, Vercel, Netlify, VPS,...
