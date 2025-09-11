@@ -1,4 +1,4 @@
 flask
 numpy
 pandas
-python app.py
+gunicorn
