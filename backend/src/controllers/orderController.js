@@ -144,12 +144,17 @@ export const createOrder = async (req, res) => {
         if (ipAddr === '::1' || ipAddr.includes('::ffff:')) {
             processedIp = '127.0.0.1';
         }
-          // Tạo URL thanh toán VNPay
+        // Tạo URL thanh toán VNPay
         const orderInfo = `Order${orderCode}`;
-        const returnUrl = `${req.protocol}://${req.get('host')}/api/payment/vnpay-return`;        // Tạo ngày hết hạn thanh toán (30 phút sau)
+        
+        // KHÔNG sử dụng dynamic returnUrl từ request vì trong Docker/Nginx proxy có thể sai
+        // VNPay sẽ sử dụng vnp_ReturnUrl đã cấu hình trong vnpayConfig (từ .env)
+        
+        // Tạo ngày hết hạn thanh toán (30 phút sau)
         const expireDate = new Date(Date.now() + 30 * 60 * 1000);
         
         // Sử dụng vnpayService để tạo URL thanh toán
+        // vnp_ReturnUrl sẽ được tự động lấy từ vnpayConfig đã được cấu hình đúng
         const paymentParams = {
             vnp_TxnRef: orderCode,
             vnp_OrderInfo: orderInfo,
@@ -157,8 +162,8 @@ export const createOrder = async (req, res) => {
             vnp_Amount: totalAmount, // Sẽ được nhân 100 trong hàm createPaymentUrl
             vnp_IpAddr: processedIp,
             vnp_Locale: 'vn',
-            vnp_CreateDate: moment().format('YYYYMMDDHHmmss'),
-            vnp_ReturnUrl: returnUrl
+            vnp_CreateDate: moment().format('YYYYMMDDHHmmss')
+            // KHÔNG truyền vnp_ReturnUrl ở đây, để dùng giá trị mặc định từ config
         };
 
         const paymentUrl = vnpayService.createPaymentUrl(paymentParams);
