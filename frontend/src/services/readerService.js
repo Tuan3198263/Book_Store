@@ -56,8 +56,9 @@ class ReaderService {
     if (format !== 'epub') {
       throw new Error('Chỉ hỗ trợ định dạng EPUB cho proxy');
     }
-    const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
-    return `${baseUrl}/reader/proxy/${bookId}/${format}`;
+    // Sử dụng relative path để hoạt động với cả localhost và production
+    // Nginx sẽ proxy /api đến backend:3000
+    return `/api/reader/proxy/${bookId}/${format}`;
   }
 
   // ======================= PDF DOWNLOAD =======================
